@@ -12,149 +12,175 @@ const Problem9 = () => {
   const [isDrawing, setIsDrawing] = useState(false)
   const [undoStack, setUndoStack] = useState<ImageData[]>([])
   const [redoStack, setRedoStack] = useState<ImageData[]>([])
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const animationFrameRef = useRef<number>()
   const lastDrawTimeRef = useRef<number>(0)
-  
+
   // Проблема: canvas перерендеривается при каждом изменении состояния
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return
-    
-    const rect = canvasRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    
-    setIsDrawing(true)
-    
-    const ctx = canvasRef.current.getContext("2d")
-    if (!ctx) return
-    
-    ctx.beginPath()
-    ctx.moveTo(x, y)
-    ctx.lineWidth = brushSize
-    ctx.strokeStyle = brushColor
-    ctx.lineCap = "round"
-    ctx.lineJoin = "round"
-  }
-  
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !canvasRef.current) return
-    
-    // Проблема: нет throttling для mouse move
-    const now = Date.now()
-    if (now - lastDrawTimeRef.current < 16) return // 60fps
-    lastDrawTimeRef.current = now
-    
-    const rect = canvasRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    
-    const ctx = canvasRef.current.getContext("2d")
-    if (!ctx) return
-    
-    ctx.lineTo(x, y)
-    ctx.stroke()
-  }
-  
-  const handleMouseUp = () => {
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!canvasRef.current) return
+
+      const rect = canvasRef.current.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+
+      setIsDrawing(true)
+
+      const ctx = canvasRef.current.getContext("2d")
+      if (!ctx) return
+
+      ctx.beginPath()
+      ctx.moveTo(x, y)
+      ctx.lineWidth = brushSize
+      ctx.strokeStyle = brushColor
+      ctx.lineCap = "round"
+      ctx.lineJoin = "round"
+    },
+    [brushSize, brushColor]
+  )
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!isDrawing || !canvasRef.current) return
+
+      // Проблема: нет throttling для mouse move
+      const now = Date.now()
+      if (now - lastDrawTimeRef.current < 16) return // 60fps
+      lastDrawTimeRef.current = now
+
+      const rect = canvasRef.current.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+
+      const ctx = canvasRef.current.getContext("2d")
+      if (!ctx) return
+
+      ctx.lineTo(x, y)
+      ctx.stroke()
+    },
+    [isDrawing]
+  )
+
+  const handleMouseUp = useCallback(() => {
     if (!isDrawing) return
-    
+
     setIsDrawing(false)
-    
+
     // Сохраняем состояние для undo
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext("2d")
       if (ctx) {
-        const imageData = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height)
-        setUndoStack(prev => [...prev, imageData])
+        const imageData = ctx.getImageData(
+          0,
+          0,
+          canvasRef.current.width,
+          canvasRef.current.height
+        )
+        setUndoStack((prev) => [...prev, imageData])
         setRedoStack([]) // Очищаем redo при новом действии
       }
     }
-  }
-  
-  const clearCanvas = () => {
+  }, [isDrawing])
+
+  const clearCanvas = useCallback(() => {
     if (!canvasRef.current) return
-    
+
     const ctx = canvasRef.current.getContext("2d")
     if (!ctx) return
-    
+
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
-    
+
     // Сохраняем состояние для undo
-    const imageData = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height)
-    setUndoStack(prev => [...prev, imageData])
+    const imageData = ctx.getImageData(
+      0,
+      0,
+      canvasRef.current.width,
+      canvasRef.current.height
+    )
+    setUndoStack((prev) => [...prev, imageData])
     setRedoStack([])
-  }
-  
-  const undo = () => {
+  }, [])
+
+  const undo = useCallback(() => {
     if (undoStack.length === 0 || !canvasRef.current) return
-    
+
     const ctx = canvasRef.current.getContext("2d")
     if (!ctx) return
-    
+
     // Сохраняем текущее состояние в redo
-    const currentImageData = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height)
-    setRedoStack(prev => [...prev, currentImageData])
-    
+    const currentImageData = ctx.getImageData(
+      0,
+      0,
+      canvasRef.current.width,
+      canvasRef.current.height
+    )
+    setRedoStack((prev) => [...prev, currentImageData])
+
     // Восстанавливаем предыдущее состояние
     const previousImageData = undoStack[undoStack.length - 1]
     ctx.putImageData(previousImageData, 0, 0)
-    
-    setUndoStack(prev => prev.slice(0, -1))
-  }
-  
-  const redo = () => {
+
+    setUndoStack((prev) => prev.slice(0, -1))
+  }, [undoStack])
+
+  const redo = useCallback(() => {
     if (redoStack.length === 0 || !canvasRef.current) return
-    
+
     const ctx = canvasRef.current.getContext("2d")
     if (!ctx) return
-    
+
     // Сохраняем текущее состояние в undo
-    const currentImageData = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height)
-    setUndoStack(prev => [...prev, currentImageData])
-    
+    const currentImageData = ctx.getImageData(
+      0,
+      0,
+      canvasRef.current.width,
+      canvasRef.current.height
+    )
+    setUndoStack((prev) => [...prev, currentImageData])
+
     // Восстанавливаем следующее состояние
     const nextImageData = redoStack[redoStack.length - 1]
     ctx.putImageData(nextImageData, 0, 0)
-    
-    setRedoStack(prev => prev.slice(0, -1))
-  }
-  
+
+    setRedoStack((prev) => prev.slice(0, -1))
+  }, [redoStack])
+
   // Проблема: canvas пересоздается при каждом рендере
   const resizeCanvas = useCallback(() => {
     if (!canvasRef.current || !containerRef.current) return
-    
+
     const container = containerRef.current
     const canvas = canvasRef.current
     const ctx = canvas.getContext("2d")
-    
+
     if (!ctx) return
-    
+
     // Сохраняем текущее изображение
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    
+
     // Устанавливаем новые размеры
     canvas.width = container.clientWidth
     canvas.height = container.clientHeight
-    
+
     // Восстанавливаем изображение
     ctx.putImageData(imageData, 0, 0)
   }, [])
-  
+
   useEffect(() => {
     resizeCanvas()
-    
+
     const handleResize = () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
       animationFrameRef.current = requestAnimationFrame(resizeCanvas)
     }
-    
+
     window.addEventListener("resize", handleResize)
-    
+
     return () => {
       window.removeEventListener("resize", handleResize)
       if (animationFrameRef.current) {
@@ -162,20 +188,28 @@ const Problem9 = () => {
       }
     }
   }, [resizeCanvas])
-  
+
   return (
     <div style={{ padding: "20px" }}>
       <h2>Задача 9: useRef и оптимизация DOM операций</h2>
-      
+
       <div style={{ marginBottom: "20px" }}>
         <p>
-          Canvas перерендеривается при каждом изменении состояния, что приводит к потере изображения
-          и плохой производительности. DOM операции выполняются синхронно, блокируя UI.
+          Canvas перерендеривается при каждом изменении состояния, что приводит
+          к потере изображения и плохой производительности. DOM операции
+          выполняются синхронно, блокируя UI.
         </p>
       </div>
-      
+
       <div style={{ marginBottom: "20px" }}>
-        <div style={{ display: "flex", gap: "10px", marginBottom: "10px", flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            marginBottom: "10px",
+            flexWrap: "wrap",
+          }}
+        >
           <label>
             Размер кисти:
             <input
@@ -188,7 +222,7 @@ const Problem9 = () => {
             />
             {brushSize}px
           </label>
-          
+
           <label>
             Цвет:
             <input
@@ -198,21 +232,21 @@ const Problem9 = () => {
               style={{ marginLeft: "5px" }}
             />
           </label>
-          
+
           <button onClick={clearCanvas} style={{ padding: "5px 10px" }}>
             Очистить
           </button>
-          
-          <button 
-            onClick={undo} 
+
+          <button
+            onClick={undo}
             disabled={undoStack.length === 0}
             style={{ padding: "5px 10px" }}
           >
             Отменить
           </button>
-          
-          <button 
-            onClick={redo} 
+
+          <button
+            onClick={redo}
             disabled={redoStack.length === 0}
             style={{ padding: "5px 10px" }}
           >
@@ -220,8 +254,8 @@ const Problem9 = () => {
           </button>
         </div>
       </div>
-      
-      <div 
+
+      <div
         ref={containerRef}
         style={{
           border: "2px solid #ddd",
@@ -229,7 +263,7 @@ const Problem9 = () => {
           width: "100%",
           height: "400px",
           position: "relative",
-          overflow: "hidden"
+          overflow: "hidden",
         }}
       >
         <canvas
@@ -242,11 +276,11 @@ const Problem9 = () => {
             cursor: "crosshair",
             display: "block",
             width: "100%",
-            height: "100%"
+            height: "100%",
           }}
         />
       </div>
-      
+
       <div style={{ marginTop: "20px" }}>
         <h4>Проблемы:</h4>
         <ul>
