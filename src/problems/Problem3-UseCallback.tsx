@@ -61,24 +61,24 @@ const Problem3 = () => {
   const [otherState, setOtherState] = useState(0)
 
   // Эти функции создаются заново при каждом рендере
-  const handleButton1Click = () => {
+  const handleButton1Click = useCallback(() => {
     setCount1((c) => c + 1)
-  }
+  }, [])
 
-  const handleButton2Click = () => {
+  const handleButton2Click = useCallback(() => {
     setCount2((c) => c + 1)
-  }
+  }, [])
 
-  const handleSearch = (value: string) => {
+  const handleSearch = useCallback((value: string) => {
     setSearchTerm(value)
-  }
+  }, [])
 
   // Эта функция создается заново при каждом рендере
-  const handleComplexOperation = (id: number) => {
+  const handleComplexOperation = useCallback((id: number) => {
     console.log(`Выполняется сложная операция для ID: ${id}`)
     // Имитация сложной операции
     return id * 2
-  }
+  }, [])
 
   return (
     <div style={{ padding: "20px" }}>
