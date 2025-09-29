@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Problem1, Problem2, Problem3, Problem4, Problem5 } from './problems'
+import { Problem1, Problem2, Problem3, Problem4, Problem5, Problem6, Problem7, Problem8, Problem9, Problem10 } from './problems'
 
 function App() {
   const [activeProblem, setActiveProblem] = useState(1)
@@ -10,6 +10,11 @@ function App() {
     { id: 3, title: 'useCallback', component: Problem3 },
     { id: 4, title: 'Lazy Loading', component: Problem4 },
     { id: 5, title: 'Context API', component: Problem5 },
+    { id: 6, title: 'Виртуализация', component: Problem6 },
+    { id: 7, title: 'Debounce', component: Problem7 },
+    { id: 8, title: 'Concurrent', component: Problem8 },
+    { id: 9, title: 'useRef', component: Problem9 },
+    { id: 10, title: 'Custom Hooks', component: Problem10 },
   ]
 
   const ActiveComponent = problems.find(p => p.id === activeProblem)?.component || Problem1

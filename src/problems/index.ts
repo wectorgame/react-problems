@@ -3,3 +3,8 @@ export { default as Problem2 } from './Problem2-UseMemo';
 export { default as Problem3 } from './Problem3-UseCallback';
 export { default as Problem4 } from './Problem4-LazyLoading';
 export { default as Problem5 } from './Problem5-Context';
+export { default as Problem6 } from './Problem6-Virtualization';
+export { default as Problem7 } from './Problem7-Debounce';
+export { default as Problem8 } from './Problem8-Concurrent';
+export { default as Problem9 } from './Problem9-Refs';
+export { default as Problem10 } from './Problem10-CustomHooks';
