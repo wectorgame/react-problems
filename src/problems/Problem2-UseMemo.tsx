@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react"
+import { useState, useMemo } from "react"
 
 // Эта функция выполняется при каждом рендере
 const expensiveCalculation = (numbers: number[]): number => {
@@ -16,7 +16,7 @@ const expensiveCalculation = (numbers: number[]): number => {
 
 // Этот компонент перерендеривается при каждом изменении count
 const ExpensiveCalculation = ({ numbers }: { numbers: number[] }) => {
-  const result = expensiveCalculation(numbers)
+  const result = useMemo(() => expensiveCalculation(numbers), [numbers])
 
   return (
     <div style={{ padding: "10px", border: "1px solid #ccc", margin: "5px" }}>
@@ -33,16 +33,20 @@ const Problem2 = () => {
   const [filter, setFilter] = useState("")
 
   // Этот массив создается заново при каждом рендере
-  const filteredNumbers = numbers.filter((num) =>
-    num.toString().includes(filter)
+  const filteredNumbers = useMemo(
+    () => numbers.filter((num) => num.toString().includes(filter)),
+    [numbers, filter]
   )
 
   // Этот объект создается заново при каждом рендере
-  const config = {
-    theme: "dark",
-    language: "ru",
-    numbers: filteredNumbers,
-  }
+  const config = useMemo(
+    () => ({
+      theme: "dark",
+      language: "ru",
+      numbers: filteredNumbers,
+    }),
+    [filteredNumbers]
+  )
 
   return (
     <div style={{ padding: "20px" }}>
