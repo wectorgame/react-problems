@@ -1,14 +1,15 @@
-import React, { useState, memo } from "react"
+import { useState, memo, useMemo } from "react"
 
 // Этот компонент перерендеривается при каждом изменении родительского компонента
 // даже если его props не изменились
-const ExpensiveChild = ({ name, age }: { name: string; age: number }) => {
+const ExpensiveChild = memo(({ name, age }: { name: string; age: number }) => {
   console.log("ExpensiveChild перерендерился!")
 
   // Имитация дорогой операции
-  const expensiveValue = Array.from({ length: 1000000 }, (_, i) => i).reduce(
-    (a, b) => a + b,
-    0
+  const expensiveValue = useMemo(
+    () =>
+      Array.from({ length: 1000000 }, (_, i) => i).reduce((a, b) => a + b, 0),
+    []
   )
 
   return (
@@ -19,13 +20,13 @@ const ExpensiveChild = ({ name, age }: { name: string; age: number }) => {
       <p>Результат дорогого вычисления: {expensiveValue}</p>
     </div>
   )
-}
+})
 
 // Этот компонент тоже перерендеривается без необходимости
-const SimpleChild = ({ text }: { text: string }) => {
+const SimpleChild = memo(({ text }: { text: string }) => {
   console.log("SimpleChild перерендерился!")
   return <p>Простой текст: {text}</p>
-}
+})
 
 const Problem1 = () => {
   const [count, setCount] = useState(0)
