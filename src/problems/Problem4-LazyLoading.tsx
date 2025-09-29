@@ -1,14 +1,11 @@
-import React, { useState, Suspense, lazy } from "react"
-
-// Все компоненты загружаются сразу, даже если они не нужны
-import HeavyComponent from "./HeavyComponent"
-import AnotherHeavyComponent from "./AnotherHeavyComponent"
-import YetAnotherHeavyComponent from "./YetAnotherHeavyComponent"
+import { useState, Suspense, lazy } from "react"
 
 // Используйте lazy для отложенной загрузки
-// const HeavyComponent = lazy(() => import('./HeavyComponent'));
-// const AnotherHeavyComponent = lazy(() => import('./AnotherHeavyComponent'));
-// const YetAnotherHeavyComponent = lazy(() => import('./YetAnotherHeavyComponent'));
+const HeavyComponent = lazy(() => import("./HeavyComponent"))
+const AnotherHeavyComponent = lazy(() => import("./AnotherHeavyComponent"))
+const YetAnotherHeavyComponent = lazy(
+  () => import("./YetAnotherHeavyComponent")
+)
 
 const Problem4 = () => {
   const [activeTab, setActiveTab] = useState<
@@ -90,7 +87,9 @@ const Problem4 = () => {
             borderRadius: "4px",
           }}
         >
-          {renderActiveComponent()}
+          <Suspense fallback={<div>Загрузка...</div>}>
+            {renderActiveComponent()}
+          </Suspense>
         </div>
       </div>
 
@@ -118,7 +117,9 @@ const Problem4 = () => {
               borderRadius: "4px",
             }}
           >
-            <HeavyComponent />
+            <Suspense fallback={<div>Загрузка...</div>}>
+              <HeavyComponent />
+            </Suspense>
           </div>
         )}
       </div>
