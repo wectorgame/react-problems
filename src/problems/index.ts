@@ -7,4 +7,5 @@ export { default as Problem6 } from './Problem6-Virtualization';
 export { default as Problem7 } from './Problem7-Debounce';
 export { default as Problem8 } from './Problem8-Concurrent';
 export { default as Problem9 } from './Problem9-Refs';
-export { default as Problem10 } from './Problem10-CustomHooks';
+export { default as Problem10 } from './Problem10-CustomHooks'
+export { default as Problem11 } from './Problem11-AdvancedMemo';
