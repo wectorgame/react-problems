@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from "react"
+import { useState, useCallback, memo } from "react"
 
 // Этот компонент перерендеривается при каждом изменении родителя
 // потому что функция onClick создается заново при каждом рендере
