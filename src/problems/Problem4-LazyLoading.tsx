@@ -1,10 +1,12 @@
 import { useState, Suspense, lazy } from "react"
 
 // Используйте lazy для отложенной загрузки
-const HeavyComponent = lazy(() => import("./HeavyComponent"))
-const AnotherHeavyComponent = lazy(() => import("./AnotherHeavyComponent"))
+const HeavyComponent = lazy(() => import("../components/HeavyComponent"))
+const AnotherHeavyComponent = lazy(
+  () => import("../components/AnotherHeavyComponent")
+)
 const YetAnotherHeavyComponent = lazy(
-  () => import("./YetAnotherHeavyComponent")
+  () => import("../components/YetAnotherHeavyComponent")
 )
 
 const Problem4 = () => {
