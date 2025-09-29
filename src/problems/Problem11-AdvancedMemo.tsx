@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, memo, useRef } from "react"
+import { useState, useMemo, useCallback, memo, useRef, useEffect } from "react"
 
 interface ExpensiveData {
   id: number
@@ -20,157 +20,8 @@ interface FilterState {
   sortOrder: "asc" | "desc"
 }
 
-const Problem11 = () => {
-  const [data, setData] = useState<ExpensiveData[]>([])
-  const [filter, setFilter] = useState<FilterState>({
-    category: "all",
-    minValue: 0,
-    maxValue: 1000,
-    tags: [],
-    sortBy: "value",
-    sortOrder: "asc",
-  })
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set())
-  const [isGenerating, setIsGenerating] = useState(false)
-
-  // Проблема: тяжелые вычисления выполняются при каждом рендере
-  const generateExpensiveData = (count: number): ExpensiveData[] => {
-    const categories = ["A", "B", "C", "D", "E"]
-    const tags = ["tag1", "tag2", "tag3", "tag4", "tag5"]
-
-    return Array.from({ length: count }, (_, i) => {
-      // Имитация тяжелых вычислений
-      let computed = 0
-      for (let j = 0; j < 10000; j++) {
-        computed += Math.sqrt(i * j) * Math.sin(i + j)
-      }
-
-      return {
-        id: i,
-        value: Math.floor(Math.random() * 1000),
-        computed: Math.floor(computed),
-        metadata: {
-          category: categories[Math.floor(Math.random() * categories.length)],
-          tags: tags.slice(0, Math.floor(Math.random() * 3) + 1),
-          timestamp: Date.now() + i,
-        },
-      }
-    })
-  }
-
-  // Проблема: данные генерируются при каждом вызове
-  const handleGenerateData = () => {
-    setIsGenerating(true)
-    // Имитация асинхронной генерации
-    setTimeout(() => {
-      const newData = generateExpensiveData(1000)
-      setData(newData)
-      setIsGenerating(false)
-    }, 100)
-  }
-
-  // Проблема: фильтрация выполняется при каждом рендере
-  const filteredData = data.filter((item) => {
-    if (
-      filter.category !== "all" &&
-      item.metadata.category !== filter.category
-    ) {
-      return false
-    }
-    if (item.value < filter.minValue || item.value > filter.maxValue) {
-      return false
-    }
-    if (
-      filter.tags.length > 0 &&
-      !filter.tags.some((tag) => item.metadata.tags.includes(tag))
-    ) {
-      return false
-    }
-    if (
-      searchTerm &&
-      !item.metadata.tags.some((tag) => tag.includes(searchTerm))
-    ) {
-      return false
-    }
-    return true
-  })
-
-  // Проблема: сортировка выполняется при каждом рендере
-  const sortedData = filteredData.sort((a, b) => {
-    let aValue: number, bValue: number
-
-    switch (filter.sortBy) {
-      case "value":
-        aValue = a.value
-        bValue = b.value
-        break
-      case "computed":
-        aValue = a.computed
-        bValue = b.computed
-        break
-      case "timestamp":
-        aValue = a.metadata.timestamp
-        bValue = b.metadata.timestamp
-        break
-      default:
-        return 0
-    }
-
-    return filter.sortOrder === "asc" ? aValue - bValue : bValue - aValue
-  })
-
-  // Проблема: статистика пересчитывается при каждом рендере
-  const statistics = {
-    total: data.length,
-    filtered: filteredData.length,
-    selected: selectedItems.size,
-    averageValue:
-      data.length > 0
-        ? data.reduce((sum, item) => sum + item.value, 0) / data.length
-        : 0,
-    averageComputed:
-      data.length > 0
-        ? data.reduce((sum, item) => sum + item.computed, 0) / data.length
-        : 0,
-    categories: [...new Set(data.map((item) => item.metadata.category))],
-    allTags: [...new Set(data.flatMap((item) => item.metadata.tags))],
-  }
-
-  // Проблема: функции пересоздаются при каждом рендере
-  const handleFilterChange = (key: keyof FilterState, value: any) => {
-    setFilter((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const handleItemSelect = (id: number) => {
-    setSelectedItems((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(id)) {
-        newSet.delete(id)
-      } else {
-        newSet.add(id)
-      }
-      return newSet
-    })
-  }
-
-  const handleSelectAll = () => {
-    if (selectedItems.size === sortedData.length) {
-      setSelectedItems(new Set())
-    } else {
-      setSelectedItems(new Set(sortedData.map((item) => item.id)))
-    }
-  }
-
-  const handleBulkOperation = (operation: "delete" | "update") => {
-    if (operation === "delete") {
-      setData((prev) => prev.filter((item) => !selectedItems.has(item.id)))
-      setSelectedItems(new Set())
-    }
-  }
-
-  // Проблема: компонент перерендеривается при каждом изменении
-  const DataItem = ({
+const DataItem = memo(
+  ({
     item,
     isSelected,
     onSelect,
@@ -214,6 +65,184 @@ const Problem11 = () => {
         </div>
       </div>
     )
+  }
+)
+
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay)
+    return () => clearTimeout(timer)
+  }, [value, delay])
+  return debouncedValue
+}
+
+const Problem11 = () => {
+  const [data, setData] = useState<ExpensiveData[]>([])
+  const [filter, setFilter] = useState<FilterState>({
+    category: "all",
+    minValue: 0,
+    maxValue: 1000,
+    tags: [],
+    sortBy: "value",
+    sortOrder: "asc",
+  })
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set())
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const debounceValue = useDebounce(searchTerm, 500)
+
+  // Проблема: тяжелые вычисления выполняются при каждом рендере
+  const generateExpensiveData = useMemo(
+    () =>
+      (count: number): ExpensiveData[] => {
+        const categories = ["A", "B", "C", "D", "E"]
+        const tags = ["tag1", "tag2", "tag3", "tag4", "tag5"]
+
+        return Array.from({ length: count }, (_, i) => {
+          // Имитация тяжелых вычислений
+          let computed = 0
+          for (let j = 0; j < 10000; j++) {
+            computed += Math.sqrt(i * j) * Math.sin(i + j)
+          }
+
+          return {
+            id: i,
+            value: Math.floor(Math.random() * 1000),
+            computed: Math.floor(computed),
+            metadata: {
+              category:
+                categories[Math.floor(Math.random() * categories.length)],
+              tags: tags.slice(0, Math.floor(Math.random() * 3) + 1),
+              timestamp: Date.now() + i,
+            },
+          }
+        })
+      },
+    []
+  )
+
+  // Проблема: данные генерируются при каждом вызове
+  const handleGenerateData = useCallback(() => {
+    setIsGenerating(true)
+    // Имитация асинхронной генерации
+    setTimeout(() => {
+      const newData = generateExpensiveData(1000)
+      setData(newData)
+      setIsGenerating(false)
+    }, 100)
+  }, [generateExpensiveData])
+
+  // Проблема: фильтрация выполняется при каждом рендере
+  const filteredData = useMemo(() => {
+    return data.filter((item) => {
+      if (
+        filter.category !== "all" &&
+        item.metadata.category !== filter.category
+      ) {
+        return false
+      }
+      if (item.value < filter.minValue || item.value > filter.maxValue) {
+        return false
+      }
+      if (
+        filter.tags.length > 0 &&
+        !filter.tags.some((tag) => item.metadata.tags.includes(tag))
+      ) {
+        return false
+      }
+      if (
+        debounceValue &&
+        !item.metadata.tags.some((tag) => tag.includes(debounceValue))
+      ) {
+        return false
+      }
+      return true
+    })
+  }, [data, filter, debounceValue])
+
+  // Проблема: сортировка выполняется при каждом рендере
+  const sortedData = useMemo(
+    () =>
+      filteredData.sort((a, b) => {
+        let aValue: number, bValue: number
+
+        switch (filter.sortBy) {
+          case "value":
+            aValue = a.value
+            bValue = b.value
+            break
+          case "computed":
+            aValue = a.computed
+            bValue = b.computed
+            break
+          case "timestamp":
+            aValue = a.metadata.timestamp
+            bValue = b.metadata.timestamp
+            break
+          default:
+            return 0
+        }
+
+        return filter.sortOrder === "asc" ? aValue - bValue : bValue - aValue
+      }),
+    [filteredData, filter]
+  )
+
+  // Проблема: статистика пересчитывается при каждом рендере
+  const statistics = useMemo(
+    () => ({
+      total: data.length,
+      filtered: filteredData.length,
+      selected: selectedItems.size,
+      averageValue:
+        data.length > 0
+          ? data.reduce((sum, item) => sum + item.value, 0) / data.length
+          : 0,
+      averageComputed:
+        data.length > 0
+          ? data.reduce((sum, item) => sum + item.computed, 0) / data.length
+          : 0,
+      categories: [...new Set(data.map((item) => item.metadata.category))],
+      allTags: [...new Set(data.flatMap((item) => item.metadata.tags))],
+    }),
+    [data, filteredData, selectedItems]
+  )
+
+  // Проблема: функции пересоздаются при каждом рендере
+  const handleFilterChange = useCallback(
+    (key: keyof FilterState, value: any) => {
+      setFilter((prev) => ({ ...prev, [key]: value }))
+    },
+    []
+  )
+
+  const handleItemSelect = useCallback((id: number) => {
+    setSelectedItems((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }, [])
+
+  const handleSelectAll = () => {
+    if (selectedItems.size === sortedData.length) {
+      setSelectedItems(new Set())
+    } else {
+      setSelectedItems(new Set(sortedData.map((item) => item.id)))
+    }
+  }
+
+  const handleBulkOperation = (operation: "delete" | "update") => {
+    if (operation === "delete") {
+      setData((prev) => prev.filter((item) => !selectedItems.has(item.id)))
+      setSelectedItems(new Set())
+    }
   }
 
   return (
